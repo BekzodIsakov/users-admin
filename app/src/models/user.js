@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-require('dotenv').config();
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
+const { log } = require("util");
+require("dotenv").config();
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -24,18 +27,33 @@ const UserSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  tokens: [{token: {
-    type: String,
-    required: true
-  }}]
+  createdAt: {
+    type: Date,
+    required: true,
+  },
+  lastSignedAt: {
+    type: Date,
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
+  tokens: [
+    {
+      token: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
 });
 
 UserSchema.statics.findByCredentials = async (email, password) => {
-  const user = await UserModel.findOne({ email });
+  const user = await User.findOne({ email });
   const ERROR_MSG = "Incorrect password or email";
 
   if (!user) {
-    console.log('not found');
+    console.log("User not found!");
     throw new Error(ERROR_MSG);
   }
 
@@ -45,6 +63,9 @@ UserSchema.statics.findByCredentials = async (email, password) => {
     .digest("hex");
 
   if (hashedPassword === user.password) {
+    if (user.isBlocked === true) {
+      throw new Error("Sorry, this user is blocked!")
+    }
     return user;
   }
   throw new Error(ERROR_MSG);
@@ -52,26 +73,19 @@ UserSchema.statics.findByCredentials = async (email, password) => {
 
 UserSchema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({id: user._id.toString()}, 'SecretKey')
+  const token = jwt.sign({ id: user._id.toString() }, "SecretKey");
 
-  user.tokens = user.tokens.concat({token})
+  user.tokens = user.tokens.concat({ token });
+  user.lastSignedAt = new Date();
   await user.save();
 
   return token;
-}
+};
 
 UserSchema.pre("save", async function (next) {
-  const user = this;
-  if (user.isModified("password")) {
-    const hash = crypto
-      .createHash("sha256")
-      .update(user["password"])
-      .digest("hex");
-    user["password"] = hash;
-  }
-
+  const users = this;
   next();
 });
 
-const User = new mongoose.model('user', UserSchema)
+const User = new mongoose.model("user", UserSchema);
 module.exports = User;
