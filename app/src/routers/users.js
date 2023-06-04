@@ -5,7 +5,7 @@ const authWithToken = require("../middleware/authWithToken");
 
 const User = require("../models/user");
 
-router.get("/", authWithToken, async (req, res) => {
+router.get("/users", authWithToken, async (req, res) => {
   try {
     const users = await User.find({});
     res.send(users);
@@ -67,7 +67,7 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-router.delete("/", authWithToken, async (req, res) => {
+router.delete("/delete", authWithToken, async (req, res) => {
   const users = await User.deleteMany({
     _id: {
       $in: req.body.userIds,
@@ -78,8 +78,8 @@ router.delete("/", authWithToken, async (req, res) => {
   res.send(users);
 });
 
-router.patch("/", authWithToken, async (req, res) => {
-  const users = await User.updateMany(
+router.patch("/update", authWithToken, async (req, res) => {
+  await User.updateMany(
     {
       _id: {
         $in: req.body.userIds,
@@ -87,9 +87,9 @@ router.patch("/", authWithToken, async (req, res) => {
     },
     { isBlocked: req.body.isBlocked }
   );
-  // await users.save();
+  
+  const users = await User.find({});
   res.send(users);
-  // users.forEach(user => user.isBlocked = req.body.isBlocked);
 });
 
 module.exports = router;
