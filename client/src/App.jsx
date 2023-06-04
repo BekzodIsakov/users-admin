@@ -1,25 +1,26 @@
+import { useEffect, useState } from "react";
 import { Form, Table } from "react-bootstrap";
-// import Form from "react-bootstrap/Form";
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+import { formatDate } from "./utils/formatDate";
+
 
 function App() {
-  const today = new Date();
+  const [users, setUsers] = useState([]);
+  useEffect(() => {
+    async function fetchUsers() {
+      const response = await fetch(import.meta.env.VITE_BASE_URL, {
+        headers: {
+          Authorization:
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0N2FkOTIzZjYxZmExNGYwNWNjNTM4NiIsImlhdCI6MTY4NTc3MjU3OX0.Htgrb45EmWkGyk8NY-PQQk14BrtWthdCed46z-hMol8",
+        },
+      });
+      const data = await response.json();
+      setUsers(data);
+    }
+
+    fetchUsers();
+  }, []);
   return (
     <>
-    
       <Table striped bordered>
         <thead>
           <tr>
@@ -35,41 +36,22 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          <tr className='align-middle'>
-            <td>
-              <Form.Check type='checkbox' />
-            </td>
-            <td>14ngl03nefnwro</td>
-            <td>John Doe</td>
-            <td>john_doe@email.com</td>
-            <td>
-              {monthNames[today.getMonth() + 1]} {today.getDate()},{" "}
-              {today.getFullYear()}
-            </td>
-            <td>
-              {monthNames[today.getMonth() + 1]} {today.getDate()},{" "}
-              {today.getFullYear()}
-            </td>
-            <td className='text-success'>Active</td>
-          </tr>
-
-          <tr className='align-middle'>
-            <td>
-              <Form.Check type='checkbox' />
-            </td>
-            <td>97adl42grwnrww</td>
-            <td>John Smith</td>
-            <td>john_smith@email.com</td>
-            <td>
-              {monthNames[today.getMonth() + 1]} {today.getDate()},{" "}
-              {today.getFullYear()}
-            </td>
-            <td>
-              {monthNames[today.getMonth() + 1]} {today.getDate()},{" "}
-              {today.getFullYear()}
-            </td>
-            <td className='text-danger'>Blocked</td>
-          </tr>
+          {users.length ?
+            users.map((user) => (
+              <tr className='align-middle' key={user._id}>
+                <td>
+                  <Form.Check type='checkbox' />
+                </td>
+                <td>{user._id}</td>
+                <td>{user.name}</td>
+                <td>{user.email}</td>
+                <td>{formatDate(user.lastSignedAt)}</td>
+                <td>{formatDate(user.createdAt)}</td>
+                <td className='text-success'>
+                  {user.isBlocked ? "Blocked" : "Active"}
+                </td>
+              </tr>
+            )) : null}
         </tbody>
       </Table>
     </>
