@@ -3,9 +3,7 @@ require("dotenv").config();
 
 mongoose
   .connect(
-    `mongodb+srv://yusuftempr:${encodeURIComponent(
-      process.env.ATLAS_ACCOUNT_PASSWORD
-    )}@cluster0.lsd3mvv.mongodb.net/?retryWrites=true&w=majority`
+    `mongodb+srv://yusuftempr:H5vAVWf7z9gJetYV@cluster0.lsd3mvv.mongodb.net/?retryWrites=true&w=majority`
   )
   .then((res) => {
     console.log("Database connection success!");
