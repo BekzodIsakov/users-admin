@@ -7,7 +7,7 @@ function App() {
   const [users, setUsers] = useState([]);
   useEffect(() => {
     async function fetchUsers() {
-      const response = await fetch(import.meta.env.VITE_BASE_URL, {
+      const response = await fetch("http://localhost:8080", {
         headers: {
           Authorization:
             "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0N2FkOTIzZjYxZmExNGYwNWNjNTM4NiIsImlhdCI6MTY4NTc3MjU3OX0.Htgrb45EmWkGyk8NY-PQQk14BrtWthdCed46z-hMol8",
