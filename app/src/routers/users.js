@@ -68,13 +68,13 @@ router.post("/signin", async (req, res) => {
 });
 
 router.delete("/delete", authWithToken, async (req, res) => {
-  const users = await User.deleteMany({
+  await User.deleteMany({
     _id: {
       $in: req.body.userIds,
     },
   });
-  console.log('//////////');
-  console.log({users});
+  
+  const users = await User.find({})
   res.send(users);
 });
 
@@ -87,7 +87,7 @@ router.patch("/update", authWithToken, async (req, res) => {
     },
     { isBlocked: req.body.isBlocked }
   );
-  
+
   const users = await User.find({});
   res.send(users);
 });

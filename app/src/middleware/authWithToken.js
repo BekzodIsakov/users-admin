@@ -11,11 +11,9 @@ const authWithToken = async (req, res, next) => {
       isBlocked: false,
     });
 
-    console.log({user});
     if (!user) throw new Error();
     next();
   } catch (e) {
-    console.log("authWithToken catch");
     console.log(e);
     res.redirect(308, "/signin");
     // res.status(401).send({ error: "Please authenticate." });
