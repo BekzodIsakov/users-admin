@@ -9,10 +9,10 @@ function App() {
     <div className='container-xxl py-2'>
       <Routes>
         <Route element={<ProtectedRoute />}>
-          <Route path='/' element={<Dashboard />} />
+          <Route path='users-admin/' element={<Dashboard />} />
         </Route>
-        <Route path='signin' element={<Signin />} />
-        <Route path='signup' element={<Signup />} />
+        <Route path='users-admin/signin' element={<Signin />} />
+        <Route path='users-admin/signup' element={<Signup />} />
         <Route
           path='*'
           element={<h3>Page you are looking not found: 404!</h3>}
