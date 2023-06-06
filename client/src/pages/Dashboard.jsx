@@ -10,22 +10,8 @@ import {
 } from "react-bootstrap";
 import { Check2Circle, XCircle } from "react-bootstrap-icons";
 import { formatDate } from "../utils/formatDate";
+import { updateAccount } from "../utils/updateAccount";
 import { useNavigate } from "react-router-dom";
-
-async function updateAccount(headersArg, body) {
-  const token = localStorage.getItem("token");
-  const response = await fetch("http://localhost:8080/update", {
-    method: "PATCH",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token,
-      ...headersArg,
-    },
-    body: JSON.stringify(body),
-  });
-  return response;
-}
 
 function Dashboard() {
   const [users, setUsers] = useState([]);
@@ -35,31 +21,54 @@ function Dashboard() {
 
   const navigateTo = useNavigate();
 
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/users`, {
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
+    if (response.ok) {
+      const users = await response.json();
+      setUsers(users);
+      setLoading(false);
+    } else {
+      localStorage.removeItem("token");
+      navigateTo("/signin");
+    }
+  }, [navigateTo]);
+
   async function handleSignoutButton() {
     setLoading(true);
-    await signoutUser();
+    const response = await signoutUser();
+    if (response.ok) {
+      localStorage.removeItem("token");
+      navigateTo("/signin");
+    } else {
+      const result = response.json();
+      console.error(result);
+    }
     setLoading(false);
   }
-  function signoutUser() {
+
+  async function signoutUser() {
     const token = localStorage.getItem("token");
-    return fetch("http://localhost:8080/signout", {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/signout`, {
       method: "POST",
       headers: {
         "Content-type": "application/json; charset=UTF-8",
         Authorization: "Bearer " + token,
       },
-    })
-      .then(() => {
-        localStorage.removeItem("token");
-        navigateTo("/signin");
-      })
-      .catch((e) => console.error(e));
+    });
+
+    return response;
   }
 
   async function deleteUsers(userIds) {
-    setLoading(true);
     const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:8080/delete", {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/delete`, {
       method: "DELETE",
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -68,6 +77,12 @@ function Dashboard() {
       body: JSON.stringify({ userIds }),
     });
 
+    return response;
+  }
+
+  async function handleDeleteButton() {
+    setLoading(true);
+    const response = await deleteUsers(selectedUserIds);
     if (!response.ok) {
       localStorage.removeItem("token");
       navigateTo("/signin");
@@ -81,17 +96,12 @@ function Dashboard() {
 
   async function setAccountStatus(userIds, isBlocked) {
     setLoading(true);
-    const response = await updateAccount(
-      {},
-      {
-        userIds,
-        isBlocked,
-      }
-    );
+    const headers = {};
+    const body = { userIds, isBlocked };
+    const response = await updateAccount(headers, body);
 
     if (!response.ok) {
       localStorage.removeItem("token");
-      console.log("setAccountStatus - 401");
       navigateTo("/signin");
     } else {
       const users = await response.json();
@@ -102,7 +112,7 @@ function Dashboard() {
     setLoading(false);
   }
 
-  function handleUserCheckbox(isChecked, userId) {
+  function handleUserSelect(isChecked, userId) {
     isChecked ? selectUser(userId) : unSelectUser(userId);
   }
 
@@ -123,53 +133,15 @@ function Dashboard() {
     setSelectedUserIds(allUserIds);
   }
 
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:8080/users", {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    });
-    if (!response.ok) {
-      localStorage.removeItem("token");
-      console.log("fetchUser - 401");
-      navigateTo("/signin");
-    }
-    const data = await response.json();
-    setUsers(data);
-    setLoading(false);
-  }, [navigateTo]);
-
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
   return (
     <div>
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title className='text-danger fs-5'>Deleting users</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className='fs-5'>Are you sure?</Modal.Body>
-        <Modal.Footer>
-          <Button variant='secondary' onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant='danger'
-            disabled={loading}
-            onClick={() => deleteUsers(selectedUserIds)}
-          >
-            {loading ? "Deleting..." : "Delete"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
       <Stack direction='horizontal'>
         <ButtonToolbar>
           <ButtonGroup className='me-2'>
             <Button
-              size=''
               variant='danger'
               disabled={!selectedUserIds.length || loading}
               onClick={() => setAccountStatus(selectedUserIds, true)}
@@ -235,7 +207,7 @@ function Dashboard() {
                       checked={selectedUserIds.includes(user._id)}
                       type='checkbox'
                       onChange={(e) =>
-                        handleUserCheckbox(e.target.checked, user._id)
+                        handleUserSelect(e.target.checked, user._id)
                       }
                     />
                   </td>
@@ -254,6 +226,25 @@ function Dashboard() {
             : null}
         </tbody>
       </Table>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title className='text-danger fs-5'>Deleting users</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className='fs-5'>Are you sure?</Modal.Body>
+        <Modal.Footer>
+          <Button variant='secondary' onClick={() => setShowModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant='danger'
+            disabled={loading}
+            onClick={handleDeleteButton}
+          >
+            {loading ? "Deleting..." : "Delete"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
       {loading ? "Loading..." : null}
     </div>
   );

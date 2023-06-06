@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Form, Stack } from "react-bootstrap";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import validator from "validator";
@@ -12,11 +12,6 @@ export const Signup = () => {
 
   const navigateTo = useNavigate();
 
-  const token = localStorage.getItem("token");
-  if (token) {
-    return <Navigate to={"/"} replace />;
-  }
-
   function validateUserEmail() {
     if (userEmail) {
       let message = validator.isEmail(userEmail) ? "" : "Invalid email";
@@ -27,7 +22,7 @@ export const Signup = () => {
   }
 
   async function signupUser() {
-    const response = await fetch(`http://localhost:8080/signup`, {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -38,17 +33,11 @@ export const Signup = () => {
     });
     const result = await response.json();
     if (!response.ok) {
-      // throw new Error(result);
       setInvalidEmailMessage(result.message);
     } else {
       localStorage.setItem("token", result.token);
       navigateTo("/");
     }
-    // try {
-    // } catch (error) {
-    //   const result = await error.Error.json();
-    //   console.log(result);
-    // }
   }
 
   async function handleSubmit(e) {
@@ -56,28 +45,14 @@ export const Signup = () => {
     setLoading(true);
     await signupUser();
     setLoading(false);
-
-    // fetch(`http://localhost:8080/signup`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     name: userName,
-    //     email: userEmail,
-    //     password: userPassword,
-    //   }),
-    // })
-    //   .then((response) => {
-    //     console.log({ response });
-    //     return response.json();
-    //   })
-    //   .then((user) => {
-    //     console.log({ user });
-    //     localStorage.setItem("token", user.token);
-    //     navigateTo("/");
-    //   })
-    //   .catch((e) => console.error(e))
-    //   .finally(() => setLoading(false));
   }
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      return <Navigate to={"/"} replace />;
+    }
+  }, []);
 
   return (
     <div className='container-sm' style={{ maxWidth: "23rem" }}>
@@ -123,6 +98,7 @@ export const Signup = () => {
         <div className='text-danger mt-4' style={{ fontSize: "0.8rem" }}>
           {invalidEmailMessage}
         </div>
+
         <Stack className='mt-2' gap={3}>
           <Button size='sm' type='submit' disabled={loading}>
             {loading ? "Processing..." : "Sign up"}

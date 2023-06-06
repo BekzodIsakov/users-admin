@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Form, Stack } from "react-bootstrap";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import validator from "validator";
@@ -12,11 +12,6 @@ export const Signin = () => {
 
   const navigateTo = useNavigate();
 
-  const token = localStorage.getItem("token");
-  if (token) {
-    return <Navigate to={"/"} replace />;
-  }
-
   function validateUserEmail() {
     if (userEmail) {
       let message = validator.isEmail(userEmail) ? "" : "Invalid email";
@@ -27,7 +22,7 @@ export const Signin = () => {
   }
 
   async function signinUser() {
-    const response = await fetch(`http://localhost:8080/signin`, {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -50,6 +45,13 @@ export const Signin = () => {
     await signinUser();
     setLoading(false);
   }
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      return <Navigate to={"/"} replace />;
+    }
+  }, []);
 
   return (
     <div className='container-sm' style={{ maxWidth: "23rem" }}>
