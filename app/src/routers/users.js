@@ -26,7 +26,7 @@ router.post("/signup", async (req, res) => {
       const key = Object.keys(error.keyValue);
       if (key) {
         return res.status(400).send({
-          message: `${e.keyValue[key]} is already taken. Please choose different ${key}.`,
+          message: `${error.keyValue[key]} is already taken. Please choose different ${key}.`,
         });
       }
     }
