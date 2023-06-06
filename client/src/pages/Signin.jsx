@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Button, Form, Stack } from "react-bootstrap";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import validator from "validator";
 
 export const Signin = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userPassword, setUserPassword] = useState("");
-  const [invalidEmailMessage, setInvalidEmailMessage] = useState("");
+  const [invalidCredentailsMessage, setInvalidCredentailsMessage] =
+    useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigateTo = useNavigate();
 
   const token = localStorage.getItem("token");
   if (token) {
@@ -16,20 +20,45 @@ export const Signin = () => {
   function validateUserEmail() {
     if (userEmail) {
       let message = validator.isEmail(userEmail) ? "" : "Invalid email";
-      setInvalidEmailMessage(message);
+      setInvalidCredentailsMessage(message);
     } else {
-      setInvalidEmailMessage("");
+      setInvalidCredentailsMessage("");
     }
+  }
+
+  async function signinUser() {
+    const response = await fetch(`http://localhost:8080/signin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: userEmail,
+        password: userPassword,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setInvalidCredentailsMessage(result.message);
+    } else {
+      localStorage.setItem("token", result.token);
+      navigateTo("/");
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    await signinUser();
+    setLoading(false);
   }
 
   return (
     <div className='container-sm' style={{ maxWidth: "23rem" }}>
       <h2 className='text-center my-4'>Sign in</h2>
-      <Form>
+      <Form onSubmit={handleSubmit}>
         <Stack gap={4}>
           <Form.Group controlId='formGroupEmail'>
             <Form.Label>Email address</Form.Label>
-            <div className='position-relative'>
+            <div>
               <Form.Control
                 required
                 type='email'
@@ -38,12 +67,6 @@ export const Signin = () => {
                 onChange={(e) => setUserEmail(e.target.value)}
                 onBlur={validateUserEmail}
               />
-              <div
-                className='position-absolute top-100 text-danger'
-                style={{ fontSize: "0.8rem" }}
-              >
-                {invalidEmailMessage}
-              </div>
             </div>
           </Form.Group>
           <Form.Group controlId='formGroupPassword'>
@@ -57,9 +80,12 @@ export const Signin = () => {
             />
           </Form.Group>
         </Stack>
-        <Stack className='mt-4' gap={3}>
-          <Button size='sm' type='submit'>
-            Sign in
+        <div className='mt-4 text-danger' style={{ fontSize: "0.8rem" }}>
+          {invalidCredentailsMessage}
+        </div>
+        <Stack className='mt-2' gap={3}>
+          <Button size='sm' type='submit' disabled={loading}>
+            {loading ? "Processing" : "Sign in"}
           </Button>
           <Link to={"/signup"}>Signup</Link>
         </Stack>

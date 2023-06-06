@@ -26,10 +26,8 @@ export const Signup = () => {
     }
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    fetch(`${import.meta.env.VITE_BASE_URL}/signup`, {
+  async function signupUser() {
+    const response = await fetch(`http://localhost:8080/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -37,19 +35,54 @@ export const Signup = () => {
         email: userEmail,
         password: userPassword,
       }),
-    })
-      .then((res) => res.json())
-      .then((user) => {
-        localStorage.setItem("token", user.token);
-        navigateTo("/");
-      })
-      .catch((e) => console.error(e))
-      .finally(() => setLoading(false));
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      // throw new Error(result);
+      setInvalidEmailMessage(result.message);
+    } else {
+      localStorage.setItem("token", result.token);
+      navigateTo("/");
+    }
+    // try {
+    // } catch (error) {
+    //   const result = await error.Error.json();
+    //   console.log(result);
+    // }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    await signupUser();
+    setLoading(false);
+
+    // fetch(`http://localhost:8080/signup`, {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     name: userName,
+    //     email: userEmail,
+    //     password: userPassword,
+    //   }),
+    // })
+    //   .then((response) => {
+    //     console.log({ response });
+    //     return response.json();
+    //   })
+    //   .then((user) => {
+    //     console.log({ user });
+    //     localStorage.setItem("token", user.token);
+    //     navigateTo("/");
+    //   })
+    //   .catch((e) => console.error(e))
+    //   .finally(() => setLoading(false));
   }
 
   return (
     <div className='container-sm' style={{ maxWidth: "23rem" }}>
       <h2 className='text-center my-4'>Sign up</h2>
+
       <Form onSubmit={(e) => handleSubmit(e)}>
         <Stack gap={4}>
           <Form.Group>
@@ -64,7 +97,7 @@ export const Signup = () => {
           </Form.Group>
           <Form.Group>
             <Form.Label>Email address</Form.Label>
-            <div className='position-relative'>
+            <div>
               <Form.Control
                 required
                 type='email'
@@ -73,12 +106,6 @@ export const Signup = () => {
                 onChange={(e) => setUserEmail(e.target.value)}
                 onBlur={validateUserEmail}
               />
-              <div
-                className='position-absolute top-100 text-danger'
-                style={{ fontSize: "0.8rem" }}
-              >
-                {invalidEmailMessage}
-              </div>
             </div>
           </Form.Group>
           <Form.Group controlId='formGroupPassword'>
@@ -92,7 +119,11 @@ export const Signup = () => {
             />
           </Form.Group>
         </Stack>
-        <Stack className='mt-4' gap={3}>
+
+        <div className='text-danger mt-4' style={{ fontSize: "0.8rem" }}>
+          {invalidEmailMessage}
+        </div>
+        <Stack className='mt-2' gap={3}>
           <Button size='sm' type='submit' disabled={loading}>
             {loading ? "Processing..." : "Sign up"}
           </Button>

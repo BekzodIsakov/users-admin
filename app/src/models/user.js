@@ -53,7 +53,6 @@ UserSchema.statics.findByCredentials = async (email, password) => {
   const ERROR_MSG = "Incorrect password or email";
 
   if (!user) {
-    console.log("User not found!");
     throw new Error(ERROR_MSG);
   }
 
@@ -64,7 +63,7 @@ UserSchema.statics.findByCredentials = async (email, password) => {
 
   if (hashedPassword === user.password) {
     if (user.isBlocked === true) {
-      throw new Error("Sorry, this user is blocked!")
+      throw new Error("Sorry, this user is blocked!");
     }
     return user;
   }
@@ -83,7 +82,14 @@ UserSchema.methods.generateAuthToken = async function () {
 };
 
 UserSchema.pre("save", async function (next) {
-  const users = this;
+  const user = this;
+  if (user.isModified("password")) {
+    const hash = crypto
+      .createHash("sha256")
+      .update(user["password"])
+      .digest("hex");
+    user["password"] = hash;
+  }
   next();
 });
 

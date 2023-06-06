@@ -12,11 +12,11 @@ const authWithToken = async (req, res, next) => {
     });
 
     if (!user) throw new Error();
+    req.user = user;
+    req.token = token;
     next();
-  } catch (e) {
-    console.log(e);
-    res.redirect(308, "/signin");
-    // res.status(401).send({ error: "Please authenticate." });
+  } catch (error) {
+    res.status(401).send();
   }
 };
 

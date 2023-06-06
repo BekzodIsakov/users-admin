@@ -9,8 +9,8 @@ router.get("/users", authWithToken, async (req, res) => {
   try {
     const users = await User.find({});
     res.send(users);
-  } catch (e) {
-    res.status(404).send(e);
+  } catch (error) {
+    res.status(404).send(error);
   }
 });
 
@@ -18,38 +18,28 @@ router.post("/signup", async (req, res) => {
   try {
     const user = new User(req.body);
     user.createdAt = new Date();
-    await user.save();
     const token = await user.generateAuthToken();
+    await user.save();
     res.status(201).send({ user, token });
-  } catch (e) {
-    if (e.keyValue) {
-      const key = Object.keys(e?.keyValue);
+  } catch (error) {
+    if (error.keyValue) {
+      const key = Object.keys(e.keyValue);
       if (key) {
-        return res
-          .status(400)
-          .send(
-            {message: `${e.keyValue[key]} already exists. Please choose different ${key}.`}
-          );
+        return res.status(400).send({
+          message: `${e.keyValue[key]} is already taken. Please choose different ${key}.`,
+        });
       }
     }
-    res.status(400).send(e);
+    res.status(400).send(error);
   }
 });
 
 router.post("/signin", async (req, res) => {
-  // const { email, password } = req.body;
-  // try {
-  //   const user = await User.findByCredentials(email, password);
-  //   token = await user.generateAuthToken();
-  //   res.send({ user, token });
-  // } catch (e) {
-  //   res.status(400).send("" + e);
-  // }
-
   const { email, password } = req.body;
   const ERROR_MSG = "Incorrect password or email";
   const user = await User.findOne({ email });
-  if (!user) return res.status(400).send(ERROR_MSG);
+  
+  if (!user) return res.status(400).send({ message: ERROR_MSG });
 
   const hashedPassword = crypto
     .createHash("sha256")
@@ -63,7 +53,7 @@ router.post("/signin", async (req, res) => {
       res.send({ user, token });
     }
   } else {
-    res.status(400).send(ERROR_MSG);
+    res.status(400).send({ message: ERROR_MSG });
   }
 });
 
@@ -73,8 +63,8 @@ router.delete("/delete", authWithToken, async (req, res) => {
       $in: req.body.userIds,
     },
   });
-  
-  const users = await User.find({})
+
+  const users = await User.find({});
   res.send(users);
 });
 
@@ -91,5 +81,11 @@ router.patch("/update", authWithToken, async (req, res) => {
   const users = await User.find({});
   res.send(users);
 });
+
+router.post('/signout', authWithToken, async (req, res) => {
+  req.user.tokens = req.user.tokens.filter(token => token.token !== req.token);
+  await req.user.save()
+  res.send();
+})
 
 module.exports = router;

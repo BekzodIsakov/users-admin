@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   ButtonGroup,
@@ -6,22 +6,25 @@ import {
   Form,
   Table,
   Modal,
+  Stack,
 } from "react-bootstrap";
 import { Check2Circle, XCircle } from "react-bootstrap-icons";
 import { formatDate } from "../utils/formatDate";
+import { useNavigate } from "react-router-dom";
 
 async function updateAccount(headersArg, body) {
   const token = localStorage.getItem("token");
-  const response = await fetch(`${import.meta.env.VITE_BASE_URL}/update`, {
+  const response = await fetch("http://localhost:8080/update", {
     method: "PATCH",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
       Authorization: "Bearer " + token,
+      ...headersArg,
     },
     body: JSON.stringify(body),
   });
-  return response.json();
+  return response;
 }
 
 function Dashboard() {
@@ -30,10 +33,33 @@ function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const navigateTo = useNavigate();
+
+  async function handleSignoutButton() {
+    setLoading(true);
+    await signoutUser();
+    setLoading(false);
+  }
+  function signoutUser() {
+    const token = localStorage.getItem("token");
+    return fetch("http://localhost:8080/signout", {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+        Authorization: "Bearer " + token,
+      },
+    })
+      .then(() => {
+        localStorage.removeItem("token");
+        navigateTo("/signin");
+      })
+      .catch((e) => console.error(e));
+  }
+
   async function deleteUsers(userIds) {
     setLoading(true);
     const token = localStorage.getItem("token");
-    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/delete`, {
+    const response = await fetch("http://localhost:8080/delete", {
       method: "DELETE",
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -41,15 +67,21 @@ function Dashboard() {
       },
       body: JSON.stringify({ userIds }),
     });
-    const data = await response.json();
-    setUsers(data);
-    setLoading(false);
-    setShowModal(false);
+
+    if (!response.ok) {
+      localStorage.removeItem("token");
+      navigateTo("/signin");
+    } else {
+      const users = await response.json();
+      setUsers(users);
+      setLoading(false);
+      setShowModal(false);
+    }
   }
 
   async function setAccountStatus(userIds, isBlocked) {
     setLoading(true);
-    const data = await updateAccount(
+    const response = await updateAccount(
       {},
       {
         userIds,
@@ -57,10 +89,16 @@ function Dashboard() {
       }
     );
 
-    if (data) {
-      setUsers(data);
+    if (!response.ok) {
+      localStorage.removeItem("token");
+      console.log("setAccountStatus - 401");
+      navigateTo("/signin");
+    } else {
+      const users = await response.json();
+      setUsers(users);
       handleSelectAllUserIds(false);
     }
+
     setLoading(false);
   }
 
@@ -85,24 +123,27 @@ function Dashboard() {
     setSelectedUserIds(allUserIds);
   }
 
-  console.log({ selectedUserIds });
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:8080/users", {
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+    if (!response.ok) {
+      localStorage.removeItem("token");
+      console.log("fetchUser - 401");
+      navigateTo("/signin");
+    }
+    const data = await response.json();
+    setUsers(data);
+    setLoading(false);
+  }, [navigateTo]);
 
   useEffect(() => {
-    async function fetchUsers() {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/users`, {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      });
-      const data = await response.json();
-      setUsers(data);
-      setLoading(false);
-    }
-
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
   return (
     <div>
       <Modal show={showModal} onHide={() => setShowModal(false)}>
@@ -124,37 +165,48 @@ function Dashboard() {
         </Modal.Footer>
       </Modal>
 
-      <ButtonToolbar>
-        <ButtonGroup className='me-2'>
-          <Button
-            size=''
-            variant='danger'
-            disabled={!selectedUserIds.length || loading}
-            onClick={() => setAccountStatus(selectedUserIds, true)}
-          >
-            Block
-          </Button>
-        </ButtonGroup>
+      <Stack direction='horizontal'>
+        <ButtonToolbar>
+          <ButtonGroup className='me-2'>
+            <Button
+              size=''
+              variant='danger'
+              disabled={!selectedUserIds.length || loading}
+              onClick={() => setAccountStatus(selectedUserIds, true)}
+            >
+              Block
+            </Button>
+          </ButtonGroup>
 
-        <ButtonGroup>
-          <Button
-            variant='light'
-            title={`Unblock ${selectedUserIds.length > 1 ? "users" : "user"}`}
-            disabled={!selectedUserIds.length || loading}
-            onClick={() => setAccountStatus(selectedUserIds, false)}
-          >
-            <Check2Circle color='green' />
-          </Button>
-          <Button
-            variant='light'
-            title={`Delete ${selectedUserIds.length > 1 ? "users" : "user"}`}
-            disabled={!selectedUserIds.length || loading}
-            onClick={() => setShowModal(true)}
-          >
-            <XCircle color='tomato' />
-          </Button>
-        </ButtonGroup>
-      </ButtonToolbar>
+          <ButtonGroup>
+            <Button
+              variant='light'
+              title={`Unblock ${selectedUserIds.length > 1 ? "users" : "user"}`}
+              disabled={!selectedUserIds.length || loading}
+              onClick={() => setAccountStatus(selectedUserIds, false)}
+            >
+              <Check2Circle color='green' />
+            </Button>
+            <Button
+              variant='light'
+              title={`Delete ${selectedUserIds.length > 1 ? "users" : "user"}`}
+              disabled={!selectedUserIds.length || loading}
+              onClick={() => setShowModal(true)}
+            >
+              <XCircle color='tomato' />
+            </Button>
+          </ButtonGroup>
+        </ButtonToolbar>
+
+        <Button
+          variant='light'
+          className='ms-auto'
+          disabled={loading}
+          onClick={handleSignoutButton}
+        >
+          {loading ? "Processing..." : "Sign out"}
+        </Button>
+      </Stack>
 
       <Table striped bordered className='mt-2'>
         <thead>
