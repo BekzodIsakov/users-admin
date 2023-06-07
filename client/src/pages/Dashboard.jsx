@@ -182,7 +182,7 @@ function Dashboard() {
             <th>
               <Form.Check
                 type='checkbox'
-                checked={selectedUserIds.length === users.length}
+                checked={users.length && selectedUserIds.length === users.length}
                 onChange={(e) => handleSelectAllUserIds(e.target.checked)}
               />
             </th>
