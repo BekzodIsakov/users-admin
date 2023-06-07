@@ -6,8 +6,9 @@ import validator from "validator";
 export const Signin = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userPassword, setUserPassword] = useState("");
-  const [invalidCredentailsMessage, setInvalidCredentailsMessage] =
+  const [invalidCredentialsMessage, setInvalidCredentialsMessage] =
     useState("");
+  const [invalidEmailMessage, setInvalidEmailMessage] = useState();
   const [loading, setLoading] = useState(false);
 
   const navigateTo = useNavigate();
@@ -15,9 +16,9 @@ export const Signin = () => {
   function validateUserEmail() {
     if (userEmail) {
       let message = validator.isEmail(userEmail) ? "" : "Invalid email";
-      setInvalidCredentailsMessage(message);
+      setInvalidEmailMessage(message);
     } else {
-      setInvalidCredentailsMessage("");
+      setInvalidEmailMessage("");
     }
   }
 
@@ -32,7 +33,7 @@ export const Signin = () => {
     });
     const result = await response.json();
     if (!response.ok) {
-      setInvalidCredentailsMessage(result.message);
+      setInvalidCredentialsMessage(result.message);
     } else {
       localStorage.setItem("token", result.token);
       navigateTo("/");
@@ -57,10 +58,10 @@ export const Signin = () => {
     <div className='container-sm' style={{ maxWidth: "23rem" }}>
       <h2 className='text-center my-4'>Sign in</h2>
       <Form onSubmit={handleSubmit}>
-        <Stack gap={4}>
+        <Stack gap={4} className='mb-4'>
           <Form.Group controlId='formGroupEmail'>
             <Form.Label>Email address</Form.Label>
-            <div>
+            <div className='position-relative'>
               <Form.Control
                 required
                 type='email'
@@ -69,6 +70,14 @@ export const Signin = () => {
                 onChange={(e) => setUserEmail(e.target.value)}
                 onBlur={validateUserEmail}
               />
+              {invalidEmailMessage && (
+                <div
+                  className='position-absolute top-100 text-danger'
+                  style={{ fontSize: "0.8rem" }}
+                >
+                  {invalidEmailMessage}
+                </div>
+              )}
             </div>
           </Form.Group>
           <Form.Group controlId='formGroupPassword'>
@@ -82,9 +91,12 @@ export const Signin = () => {
             />
           </Form.Group>
         </Stack>
-        <div className='mt-4 text-danger' style={{ fontSize: "0.8rem" }}>
-          {invalidCredentailsMessage}
-        </div>
+
+        {invalidCredentialsMessage && (
+          <div className='text-danger' style={{ fontSize: "0.8rem" }}>
+            {invalidCredentialsMessage}
+          </div>
+        )}
         <Stack className='mt-2' gap={3}>
           <Button size='sm' type='submit' disabled={loading}>
             {loading ? "Processing" : "Sign in"}

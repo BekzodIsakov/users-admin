@@ -17,9 +17,16 @@ function Dashboard() {
   const [users, setUsers] = useState([]);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
+  const [isSigningOut, setIsSigningOut] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(null);
 
   const navigateTo = useNavigate();
+
+  function handleUnAuthedRequest() {
+    localStorage.removeItem("token");
+    navigateTo("/signin");
+  }
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -35,22 +42,15 @@ function Dashboard() {
       setUsers(users);
       setLoading(false);
     } else {
-      localStorage.removeItem("token");
-      navigateTo("/signin");
+      handleUnAuthedRequest();
     }
-  }, [navigateTo]);
+  }, []);
 
   async function handleSignoutButton() {
-    setLoading(true);
-    const response = await signoutUser();
-    if (response.ok) {
-      localStorage.removeItem("token");
-      navigateTo("/signin");
-    } else {
-      const result = response.json();
-      console.error(result);
-    }
-    setLoading(false);
+    setIsSigningOut(true);
+    await signoutUser();
+    handleUnAuthedRequest();
+    setIsSigningOut(false);
   }
 
   async function signoutUser() {
@@ -62,8 +62,20 @@ function Dashboard() {
         Authorization: "Bearer " + token,
       },
     });
-
     return response;
+  }
+
+  async function handleDeleteButton() {
+    setIsDeleting(true);
+    const response = await deleteUsers(selectedUserIds);
+    if (!response.ok) {
+      handleUnAuthedRequest();
+    } else {
+      const users = await response.json();
+      setUsers(users);
+      setIsDeleting(false);
+      setShowModal(false);
+    }
   }
 
   async function deleteUsers(userIds) {
@@ -76,22 +88,7 @@ function Dashboard() {
       },
       body: JSON.stringify({ userIds }),
     });
-
     return response;
-  }
-
-  async function handleDeleteButton() {
-    setLoading(true);
-    const response = await deleteUsers(selectedUserIds);
-    if (!response.ok) {
-      localStorage.removeItem("token");
-      navigateTo("/signin");
-    } else {
-      const users = await response.json();
-      setUsers(users);
-      setLoading(false);
-      setShowModal(false);
-    }
   }
 
   async function setAccountStatus(userIds, isBlocked) {
@@ -101,8 +98,7 @@ function Dashboard() {
     const response = await updateAccount(headers, body);
 
     if (!response.ok) {
-      localStorage.removeItem("token");
-      navigateTo("/signin");
+      handleUnAuthedRequest();
     } else {
       const users = await response.json();
       setUsers(users);
@@ -162,7 +158,7 @@ function Dashboard() {
             <Button
               variant='light'
               title={`Delete ${selectedUserIds.length > 1 ? "users" : "user"}`}
-              disabled={!selectedUserIds.length || loading}
+              disabled={!selectedUserIds.length || isDeleting}
               onClick={() => setShowModal(true)}
             >
               <XCircle color='tomato' />
@@ -173,10 +169,10 @@ function Dashboard() {
         <Button
           variant='light'
           className='ms-auto'
-          disabled={loading}
+          disabled={isSigningOut}
           onClick={handleSignoutButton}
         >
-          {loading ? "Processing..." : "Sign out"}
+          {isSigningOut ? "Processing..." : "Sign out"}
         </Button>
       </Stack>
 
@@ -231,17 +227,17 @@ function Dashboard() {
         <Modal.Header closeButton>
           <Modal.Title className='text-danger fs-5'>Deleting users</Modal.Title>
         </Modal.Header>
-        <Modal.Body className='fs-5'>Are you sure?</Modal.Body>
+        <Modal.Body className='fs-6'>Are you sure?</Modal.Body>
         <Modal.Footer>
           <Button variant='secondary' onClick={() => setShowModal(false)}>
             Cancel
           </Button>
           <Button
             variant='danger'
-            disabled={loading}
+            disabled={isDeleting}
             onClick={handleDeleteButton}
           >
-            {loading ? "Deleting..." : "Delete"}
+            {isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </Modal.Footer>
       </Modal>

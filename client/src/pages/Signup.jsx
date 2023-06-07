@@ -8,6 +8,7 @@ export const Signup = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userPassword, setUserPassword] = useState("");
   const [invalidEmailMessage, setInvalidEmailMessage] = useState("");
+  const [signupErrorMessage, setSignupErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigateTo = useNavigate();
@@ -33,7 +34,7 @@ export const Signup = () => {
     });
     const result = await response.json();
     if (!response.ok) {
-      setInvalidEmailMessage(result.message);
+      setSignupErrorMessage(result.message);
     } else {
       localStorage.setItem("token", result.token);
       navigateTo("/");
@@ -59,7 +60,7 @@ export const Signup = () => {
       <h2 className='text-center my-4'>Sign up</h2>
 
       <Form onSubmit={(e) => handleSubmit(e)}>
-        <Stack gap={4}>
+        <Stack gap={4} className="mb-4">
           <Form.Group>
             <Form.Label>Name</Form.Label>
             <Form.Control
@@ -72,7 +73,7 @@ export const Signup = () => {
           </Form.Group>
           <Form.Group>
             <Form.Label>Email address</Form.Label>
-            <div>
+            <div className='position-relative'>
               <Form.Control
                 required
                 type='email'
@@ -81,6 +82,14 @@ export const Signup = () => {
                 onChange={(e) => setUserEmail(e.target.value)}
                 onBlur={validateUserEmail}
               />
+              {invalidEmailMessage && (
+                <div
+                  className='position-absolute top-100 text-danger'
+                  style={{ fontSize: "0.8rem" }}
+                >
+                  {invalidEmailMessage}
+                </div>
+              )}
             </div>
           </Form.Group>
           <Form.Group controlId='formGroupPassword'>
@@ -95,11 +104,13 @@ export const Signup = () => {
           </Form.Group>
         </Stack>
 
-        <div className='text-danger mt-4' style={{ fontSize: "0.8rem" }}>
-          {invalidEmailMessage}
-        </div>
+        {signupErrorMessage && (
+          <div className='text-danger' style={{ fontSize: "0.8rem" }}>
+            {signupErrorMessage}
+          </div>
+        )}
 
-        <Stack className='mt-2' gap={3}>
+        <Stack className='mt-2 position-relative' gap={3}>
           <Button size='sm' type='submit' disabled={loading}>
             {loading ? "Processing..." : "Sign up"}
           </Button>
