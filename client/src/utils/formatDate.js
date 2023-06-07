@@ -1,11 +1,11 @@
-export function formatDate(date) {
+export function formatDate(date, showTime = true) {
   const event = new Date(date);
   const options = {
-    day: "2-digit",
-    year: "2-digit",
+    year: "numeric",
     month: "long",
-    weekday: "short",
+    day: "numeric",
   };
-  return event.toLocaleDateString("en-US", options);
+  return showTime
+    ? event.toLocaleTimeString("en-US", options)
+    : event.toLocaleDateString("en-US", options);
 }
-

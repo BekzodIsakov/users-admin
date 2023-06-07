@@ -211,7 +211,7 @@ function Dashboard() {
                   <td>{user.name}</td>
                   <td>{user.email}</td>
                   <td>{formatDate(user.lastSignedAt)}</td>
-                  <td>{formatDate(user.createdAt)}</td>
+                  <td>{formatDate(user.createdAt, false)}</td>
                   <td
                     className={user.isBlocked ? "text-warning" : "text-success"}
                   >
